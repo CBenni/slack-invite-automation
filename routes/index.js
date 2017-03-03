@@ -1,3 +1,4 @@
+var fs = require('fs');
 var express = require('express');
 var router = express.Router();
 var request = require('request');
@@ -8,6 +9,12 @@ router.get('/', function(req, res) {
   res.render('index', { community: config.community,
                         tokenRequired: !!config.inviteToken });
 });
+
+function log(email, status, message) {
+  fs.appendFile('invites.log', "["+status+"] - "+(email?email:"no email")+" - "+message, function (err) {
+    console.error(err);
+  });
+}
 
 router.post('/invite', function(req, res) {
   if (req.body.email && (!config.inviteToken || (!!config.inviteToken && req.body.token === config.inviteToken))) {
@@ -23,19 +30,24 @@ router.post('/invite', function(req, res) {
         //   {"ok":true}
         //       or
         //   {"ok":false,"error":"already_invited"}
-        if (err) { return res.send('Error:' + err); }
+        if (err) {
+		  log(req.body.email, "Failed", err);
+		  return res.send('Error:' + err); 
+		}
         body = JSON.parse(body);
         if (body.ok) {
+		  log(req.body.email, "Success", "invited");
           res.render('result', {
             community: config.community,
             message: 'Success! Check &ldquo;'+ req.body.email +'&rdquo; for an invite from Slack.'
           });
         } else {
           var error = body.error;
+		  log(req.body.email, "Failed", error);
           if (error === 'already_invited' || error === 'already_in_team') {
             res.render('result', {
               community: config.community,
-              message: 'Success! You were already invited.<br>' +
+              message: 'All good! You were already invited.<br>' +
                        'Visit <a href="https://'+ config.slackUrl +'">'+ config.community +'</a>'
             });
             return;
