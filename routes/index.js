@@ -11,7 +11,7 @@ router.get('/', function(req, res) {
 });
 
 function log(email, status, message) {
-  fs.appendFile('invites.log', "["+status+"] - "+(email?email:"no email")+" - "+message, function (err) {
+  fs.appendFile('invites.log', "["+status+"] - "+(email?email:"no email")+" - "+message+"\n", function (err) {
     console.error(err);
   });
 }
